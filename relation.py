@@ -51,58 +51,134 @@ for k,v in synthesis_info.items():
 
 #pprint(category_items)
 
-G=nx.DiGraph()
+def research1():
+    """
+        カテゴリを要求する素材をすべて各素材からの辺に変換、すなわち各レシピに使える素材全てから調合品への辺を張る方式。
+    """    
+    G=nx.DiGraph()
 
-#素材アイテムをグラフに追加(cyanの点)
-for i in range(len(materials)):
-    G.add_node(materials[i],color="c")
+    #素材アイテムをグラフに追加(cyanの点)
+    for i in range(len(materials)):
+        G.add_node(materials[i],color="c")
 
-#調合アイテムをグラフに追加(blueの点)
-for k in synthesis_info.keys():
-    G.add_node(k,color="b")
+    #調合アイテムをグラフに追加(blueの点)
+    for k in synthesis_info.keys():
+        G.add_node(k,color="b")
 
-#レシピのエッジをグラフに追加    
-for name in synthesis_info.keys():
-    recipe=synthesis_info[name]["components"]
-    for material in recipe:
-        if "(" in material:
-            for cate_item in category_items[material]:
-                G.add_edge(cate_item,name,info="錬金:"+name)
-                G.add_edge(cate_item,"失敗作の灰",info="失敗:"+name)
-        else:
-            G.add_edge(material,name,info="錬金:"+name)
-            G.add_edge(material,"失敗作の灰",info="失敗:"+name)
+    #レシピのエッジをグラフに追加    
+    for name in synthesis_info.keys():
+        recipe=synthesis_info[name]["components"]
+        for material in recipe:
+            if "(" in material:
+                for cate_item in category_items[material]:
+                    G.add_edge(cate_item,name,info="錬金:"+name)
+                    G.add_edge(cate_item,"失敗作の灰",info="失敗:"+name)
+            else:
+                G.add_edge(material,name,info="錬金:"+name)
+                G.add_edge(material,"失敗作の灰",info="失敗:"+name)
 
-#pprint(G.edges(data=True))
+    #pprint(G.edges(data=True))
 
-pos=nx.spring_layout(G,k=0.8)
-pr=nx.pagerank(G)
-pr=sorted(pr.items(),key=lambda x:x[1],reverse=True)
+    pos=nx.spring_layout(G,k=0.8)
+    pr=nx.pagerank(G)
+    pr=sorted(pr.items(),key=lambda x:x[1],reverse=True)
 
-plt.figure(figsize=(24,16))
-node_colors=[node["color"] for node in G.nodes.values()]
+    plt.figure(figsize=(24,16))
+    node_colors=[node["color"] for node in G.nodes.values()]
 
-nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6)
-#ノードの大きさをpagerankで動的に変更するバージョン。失敗作の灰のrankが高すぎるので使いにくいかと
-#nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6,node_size=[5000*v for v in pr.values()])
+    nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6)
+    #ノードの大きさをpagerankで動的に変更するバージョン。失敗作の灰のrankが高すぎるので使いにくいかと
+    #nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6,node_size=[5000*v for v in pr.values()])
 
-nx.draw_networkx_labels(G,pos,font_size=6,font_family='Yu Gothic',font_weight="bold")
-nx.draw_networkx_edges(G,pos,edge_color="#377eb8",alpha=0.5)
+    nx.draw_networkx_labels(G,pos,font_size=6,font_family='Yu Gothic',font_weight="bold")
+    nx.draw_networkx_edges(G,pos,edge_color="#377eb8",alpha=0.5)
 
-plt.axis('off')
-#plt.savefig("sophie_relation.png")
-#plt.show()
+    plt.axis('off')
+    #plt.savefig("sophie_relation.png")
+    #plt.show()
 
-fname="sophie_pagerank.txt"
-with open(fname,"w") as f:
-    for ele in pr:
-        print(ele,file=f)
+    fname="sophie_pagerank.txt"
+    with open(fname,"w") as f:
+        for ele in pr:
+            print(ele,file=f)
 
-cate_item_key=sorted(category_items.items(),key=lambda x:len(x[1]),reverse=True)
-fname="sophie_category_size.txt"
-with open(fname,"w") as f:
-    for k,v in cate_item_key:
-        print(str(k)+"  size:"+str(len(v)),file=f)
+    cate_item_key=sorted(category_items.items(),key=lambda x:len(x[1]),reverse=True)
+    fname="sophie_category_size.txt"
+    with open(fname,"w") as f:
+        for k,v in cate_item_key:
+            print(str(k)+"  size:"+str(len(v)),file=f)
 
-print("node size:",len(G.nodes()))
-print("edge size:",len(G.edges()))
+    print("node size:",len(G.nodes()))
+    print("edge size:",len(G.edges()))
+
+
+def research2():
+    """
+        カテゴリを点として追加し、各素材やアイテムのカテゴリもその点への辺として管理する方式。
+    """    
+    #ループ調合などを探すためのグラフの作成
+    G=nx.DiGraph()
+
+    #素材アイテムをグラフに追加(cyanの点)
+    for i in range(len(materials)):
+        G.add_node(materials[i],color="c")
+
+    #調合アイテムをグラフに追加(blueの点)
+    for k in synthesis_info.keys():
+        G.add_node(k,color="b")
+
+    #カテゴリをグラフに追加(palegreenの点)
+    for k in category_items:
+        G.add_node(k,color="palegreen")
+    
+    #各アイテムのカテゴリ情報を辺として追加
+    for k in material_info.keys():
+        for category in material_info[k]:
+            G.add_edge(k,category,info="素材カテゴリ")
+    for k in synthesis_info.keys():
+        for category in synthesis_info[k]["category"]:
+            G.add_edge(k,category,info="調合品カテゴリ")
+    
+    #レシピを辺として追加
+    for name in synthesis_info.keys():
+        recipe=synthesis_info[name]["components"]
+        for item in recipe:
+            G.add_edge(item,name,info="錬金:"+name)
+            G.add_edge(item,"失敗作の灰",info="失敗:"+name)
+    
+    print("node size:",len(G.nodes()))
+    print("edge size:",len(G.edges()))
+    pos=nx.spring_layout(G,k=0.8)
+
+    plt.figure(figsize=(24,16))
+    node_colors=[node["color"] for node in G.nodes.values()]
+
+    nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6)
+    
+    nx.draw_networkx_labels(G,pos,font_size=6,font_family='Yu Gothic',font_weight="bold")
+    nx.draw_networkx_edges(G,pos,edge_color="#377eb8",alpha=0.5)
+
+    plt.axis('off')
+    plt.savefig("sophie_relation_with_category.png")
+    
+    pr=nx.pagerank(G)
+    pr=sorted(pr.items(),key=lambda x:x[1],reverse=True)
+    fname="sophie_pagerank_with_category.txt"
+    with open(fname,"w") as f:
+        for ele in pr:
+            print(ele,file=f)
+    
+    fname="sophie_important_items.txt"
+    with open(fname,"w") as f:
+        for ele in pr[:10]:
+            print(ele[0],":",file=f)
+            print("派生元:",list(G.predecessors(ele[0])),file=f)
+            print("使いみち:",list(G.successors(ele[0])),file=f)
+            print(file=f)
+
+if __name__=="__main__":
+    type=int(input("グラフのタイプを入力\n1->カテゴリを点で管理しない\n2->カテゴリを点で管理\ninput number:"))
+    if type==1:
+        research1()
+    elif type==2:
+        research2()

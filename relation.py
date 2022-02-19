@@ -61,9 +61,48 @@ for i in range(len(materials)):
 for k in synthesis_info.keys():
     G.add_node(k,color="b")
 
-pos=nx.spring_layout(G,k=0.4)
-node_colors=[node["color"] for node in G.nodes.values()]
-nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6)
-nx.draw_networkx_labels(G,pos,font_size=7,font_family='Yu Gothic',font_weight="bold")
+#レシピのエッジをグラフに追加    
+for name in synthesis_info.keys():
+    recipe=synthesis_info[name]["components"]
+    for material in recipe:
+        if "(" in material:
+            for cate_item in category_items[material]:
+                G.add_edge(cate_item,name,info="錬金:"+name)
+                G.add_edge(cate_item,"失敗作の灰",info="失敗:"+name)
+        else:
+            G.add_edge(material,name,info="錬金:"+name)
+            G.add_edge(material,"失敗作の灰",info="失敗:"+name)
 
-plt.show()
+#pprint(G.edges(data=True))
+
+pos=nx.spring_layout(G,k=0.8)
+pr=nx.pagerank(G)
+pr=sorted(pr.items(),key=lambda x:x[1],reverse=True)
+
+plt.figure(figsize=(24,16))
+node_colors=[node["color"] for node in G.nodes.values()]
+
+nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6)
+#ノードの大きさをpagerankで動的に変更するバージョン。失敗作の灰のrankが高すぎるので使いにくいかと
+#nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6,node_size=[5000*v for v in pr.values()])
+
+nx.draw_networkx_labels(G,pos,font_size=6,font_family='Yu Gothic',font_weight="bold")
+nx.draw_networkx_edges(G,pos,edge_color="#377eb8",alpha=0.5)
+
+plt.axis('off')
+#plt.savefig("sophie_relation.png")
+#plt.show()
+
+fname="sophie_pagerank.txt"
+with open(fname,"w") as f:
+    for ele in pr:
+        print(ele,file=f)
+
+cate_item_key=sorted(category_items.items(),key=lambda x:len(x[1]),reverse=True)
+fname="sophie_category_size.txt"
+with open(fname,"w") as f:
+    for k,v in cate_item_key:
+        print(str(k)+"  size:"+str(len(v)),file=f)
+
+print("node size:",len(G.nodes()))
+print("edge size:",len(G.edges()))

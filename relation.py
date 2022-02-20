@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
-from pprint import pprint
 
+#素材情報を取得
 material_fname="sophie_materials.txt"
 materials,category=[],[]
 data=[]
@@ -12,8 +12,7 @@ with open(material_fname) as f:
     category=[i[1][:-2].split(",") for i in tmp]
     material_info={materials[i]:category[i] for i in range(len(materials))}
 
-#pprint(material_info)
-
+#調合品情報を取得
 recipe_fname="sophie_recipes.txt"
 synthesis_info={}
 with open(recipe_fname) as f:
@@ -28,8 +27,7 @@ with open(recipe_fname) as f:
         synthesis_info[name]={"components":components,
                             "category":category}
 
-#pprint(synthesis_info)
-
+#素材・調合品のカテゴリを取得し、setで重複を取り除くことで、カテゴリ集合を取得
 all_categories=set()
 for k,v in material_info.items():
     for ele in v:
@@ -39,8 +37,8 @@ for k,v in synthesis_info.items():
         all_categories.add(ele)
 
 all_categories=sorted(list(all_categories))
-#print(all_categories)
 
+#そのカテゴリに属するアイテム一覧を作成
 category_items={i:[] for i in all_categories}
 for k,v in material_info.items():
     for ele in v:
@@ -49,7 +47,6 @@ for k,v in synthesis_info.items():
     for ele in v["category"]:
         category_items[ele].append(k)
 
-#pprint(category_items)
 
 def research1():
     """
@@ -77,9 +74,11 @@ def research1():
                 G.add_edge(material,name,info="錬金:"+name)
                 G.add_edge(material,"失敗作の灰",info="失敗:"+name)
 
-    #pprint(G.edges(data=True))
-
+    print("node size:",len(G.nodes()))
+    print("edge size:",len(G.edges()))
     pos=nx.spring_layout(G,k=0.8)
+    
+    #ページランクを求め、重要度順にソート
     pr=nx.pagerank(G)
     pr=sorted(pr.items(),key=lambda x:x[1],reverse=True)
 
@@ -87,15 +86,11 @@ def research1():
     node_colors=[node["color"] for node in G.nodes.values()]
 
     nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6)
-    #ノードの大きさをpagerankで動的に変更するバージョン。失敗作の灰のrankが高すぎるので使いにくいかと
-    #nx.draw_networkx_nodes(G,pos,node_color=node_colors,alpha=0.6,node_size=[5000*v for v in pr.values()])
-
     nx.draw_networkx_labels(G,pos,font_size=6,font_family='Yu Gothic',font_weight="bold")
     nx.draw_networkx_edges(G,pos,edge_color="#377eb8",alpha=0.5)
 
     plt.axis('off')
-    #plt.savefig("sophie_relation.png")
-    #plt.show()
+    plt.savefig("sophie_relation.png")
 
     fname="sophie_pagerank.txt"
     with open(fname,"w") as f:
@@ -108,8 +103,7 @@ def research1():
         for k,v in cate_item_key:
             print(str(k)+"  size:"+str(len(v)),file=f)
 
-    print("node size:",len(G.nodes()))
-    print("edge size:",len(G.edges()))
+    
 
 
 def research2():
@@ -148,7 +142,7 @@ def research2():
     
     print("node size:",len(G.nodes()))
     print("edge size:",len(G.edges()))
-    pos=nx.spring_layout(G,k=0.8)
+    pos=nx.spring_layout(G,k=0.7)
 
     plt.figure(figsize=(24,16))
     node_colors=[node["color"] for node in G.nodes.values()]
@@ -177,7 +171,10 @@ def research2():
             print(file=f)
 
 if __name__=="__main__":
-    type=int(input("グラフのタイプを入力\n1->カテゴリを点で管理しない\n2->カテゴリを点で管理\ninput number:"))
+    type=int(input("""\
+1->カテゴリを点で管理しない
+2->カテゴリを点で管理
+グラフのタイプを入力:"""))
     if type==1:
         research1()
     elif type==2:

@@ -164,7 +164,7 @@ def research2():
     
     fname="sophie_important_items.txt"
     with open(fname,"w") as f:
-        for ele in pr[:10]:
+        for ele in pr:
             print(ele[0],":",file=f)
             print("派生元:",list(G.predecessors(ele[0])),file=f)
             print("使いみち:",list(G.successors(ele[0])),file=f)
